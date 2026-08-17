@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-medical-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-medical-600/20 transition hover:bg-medical-700 hover:shadow-lg;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-full border-2 border-medical-600 px-6 py-3 text-sm font-semibold text-medical-700 transition hover:bg-medical-50;
+  }
+
+  .section-title {
+    @apply font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl;
+  }
+
+  .section-subtitle {
+    @apply mt-3 max-w-2xl text-base text-slate-600 sm:text-lg;
+  }
+
+  .card {
+    @apply rounded-2xl border border-slate-100 bg-white p-6 shadow-sm shadow-slate-200/50;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .btn-primary,
+  .btn-outline {
+    will-change: transform;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-medical-500 focus:ring-2 focus:ring-medical-500/20;
+    will-change: box-shadow, border-color;
+  }
+}

@@ -1,0 +1,29 @@
+Check the existing backend .env configuration and make sure it is actually used by the Spring Boot CMS backend.
+
+Use the existing:
+backend/cms/.env
+
+The .env already contains:
+- MAIL_USERNAME
+- MAIL_PASSWORD
+- MAIL_HOST
+- MAIL_PORT
+- MAIL_FROM
+- MAIL_FROM_NAME
+- OTP_EXPIRY_MINUTES
+
+Requirements:
+1. Check how the backend currently loads environment variables.
+2. If the existing .env is already connected/loaded, do not change it.
+3. If it is NOT being loaded, configure the existing backend startup process to load this .env file before Spring Boot starts.
+4. Keep application.properties using environment variables such as:
+   ${MAIL_USERNAME}
+   ${MAIL_PASSWORD}
+5. Do NOT hardcode any credentials into Java or application.properties.
+6. Do NOT create another .env file.
+7. Do NOT expose, print, or modify the actual MAIL_PASSWORD.
+8. Keep OTP, SMTP, appointment emails, authentication, APIs, and all other functionality unchanged.
+9. Make only the minimum changes required to connect the existing .env.
+10. After making the change, verify that Spring Boot can receive the required environment variables without revealing their values.
+
+Finally, tell me exactly how I should start the backend so the existing .env is loaded.

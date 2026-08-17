@@ -1,0 +1,6 @@
+# Example startup script — copy to "start-backend.ps1" or run .\mvnw spring-boot:run directly.
+# Mail settings are loaded automatically from backend/cms/.env via spring.config.import.
+# Run from: D:\DPportal\backend\cms
+
+Write-Host "Starting backend (mail settings loaded from .env)"
+.\mvnw spring-boot:run

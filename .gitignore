@@ -1,0 +1,16 @@
+# Environment secrets
+.env
+*.env
+
+# Java / Spring Boot
+target/
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+uploads/
