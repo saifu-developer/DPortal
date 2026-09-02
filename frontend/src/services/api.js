@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const normalizeBaseUrl = (url) => (url ? url.replace(/\/$/, '') : '');
+
 const api = axios.create({
-  baseURL: import.meta.env.DEV ? '' : 'http://localhost:8080',
+  baseURL: normalizeBaseUrl(import.meta.env.VITE_API_URL),
 });
 
 api.interceptors.request.use((config) => {
@@ -32,5 +34,19 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const path = window.location.pathname;
+      if (!path.startsWith('/login/') && path !== '/portal') {
+        localStorage.removeItem('clinic_auth');
+        window.location.assign('/portal');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

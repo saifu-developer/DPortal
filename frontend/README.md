@@ -1,32 +1,28 @@
-# Clinic Portal Frontend
+# KurePulse Clinic Portal (Frontend)
 
-React + Vite healthcare dashboard for the Clinic CMS backend.
+React + Vite SPA for the KurePulse clinic management system.
 
-## Tech Stack
-
-- React 18 + Vite
-- Tailwind CSS
-- Axios
-- React Router DOM
-
-## Setup
+## Local development
 
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
 
-App runs at `http://localhost:5173`
+Copy `.env.example` to `.env` and set `VITE_API_URL` to your backend URL, or leave it unset to proxy `/api` to `http://localhost:8080` via Vite.
 
-## Backend
+## Production build
 
-Ensure the Spring Boot API is running at `http://localhost:8080`
+```bash
+npm run build
+```
 
-## Modules
+Output: `dist/`
 
-- Dashboard — stats and recent appointments
-- Patients — CRUD + search
-- Doctors — CRUD + search
-- Appointments — CRUD with linked patient/doctor
-- Prescriptions — CRUD
+## Environment variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_API_URL` | Yes (production) | Backend API base URL, e.g. `https://dportal-j04g.onrender.com` |
+
+Set `VITE_API_URL` in the Vercel project dashboard for production deployments.
