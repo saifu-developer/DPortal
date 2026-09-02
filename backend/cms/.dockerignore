@@ -1,0 +1,33 @@
+# Build output
+target/
+
+# Local secrets and env files
+.env
+.env.*
+!.env.example
+
+# Local uploads and scripts
+uploads/
+start-backend.ps1
+start-backend.ps1.example
+
+# Version control and IDE
+.git/
+.gitignore
+.gitattributes
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Docs and misc local files
+HELP.md
+Untitled
+
+# Node artifacts (if present in repo root copies)
+node_modules/
