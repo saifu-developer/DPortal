@@ -122,7 +122,7 @@ public class AuthService {
 
         Doctor doctor = doctorRepository.findAll().stream()
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("No doctor configured in the system"));
+                .orElseGet(this::ensurePrimaryDoctor);
 
         String token = UUID.randomUUID().toString();
         AuthResponse response = new AuthResponse(token, "DOCTOR", null, doctor.getId(), doctor.getFullName(),
@@ -140,6 +140,15 @@ public class AuthService {
             throw new RuntimeException("Invalid or expired session");
         }
         return session;
+    }
+
+    private Doctor ensurePrimaryDoctor() {
+        log.warn("No doctor record found in database; provisioning default doctor profile for login");
+        Doctor doctor = new Doctor();
+        doctor.setDoctorCode("DOC001");
+        doctor.setFullName("Clinic Doctor");
+        doctor.setSpecialization("General Medicine");
+        return doctorRepository.save(doctor);
     }
 
     private String generateOtp() {

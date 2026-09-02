@@ -3,18 +3,21 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiTarget = env.VITE_API_URL || 'http://localhost:8080';
+  const useLocalProxy = !env.VITE_API_URL;
 
   return {
     plugins: [react()],
     server: {
       port: 5173,
-      proxy: {
-        '/api': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-      },
+      // Only used when VITE_API_URL is unset — axios then uses relative /api paths via this proxy.
+      proxy: useLocalProxy
+        ? {
+            '/api': {
+              target: 'http://localhost:8080',
+              changeOrigin: true,
+            },
+          }
+        : undefined,
     },
   };
 });

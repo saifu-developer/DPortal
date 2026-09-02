@@ -1,9 +1,8 @@
 import axios from 'axios';
-
-const normalizeBaseUrl = (url) => (url ? url.replace(/\/$/, '') : '');
+import API_BASE_URL from '../config/apiConfig';
 
 const api = axios.create({
-  baseURL: normalizeBaseUrl(import.meta.env.VITE_API_URL),
+  baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
