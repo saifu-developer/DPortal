@@ -2,17 +2,20 @@ package com.clinic.service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailAuthenticationException;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
+
+import com.clinic.exception.EmailDeliveryException;
 
 import jakarta.annotation.PostConstruct;
 
@@ -20,25 +23,16 @@ import jakarta.annotation.PostConstruct;
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+    private static final String BREVO_SEND_EMAIL_URI = "/smtp/email";
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy", Locale.ENGLISH);
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final RestClient brevoClient;
 
-    @Value("${spring.mail.host}")
-    private String mailHost;
+    @Value("${app.brevo.api-key:}")
+    private String brevoApiKey;
 
-    @Value("${spring.mail.port}")
-    private int mailPort;
-
-    @Value("${spring.mail.username:}")
-    private String mailUsername;
-
-    @Value("${spring.mail.password:}")
-    private String mailPassword;
-
-    @Value("${app.mail.from}")
+    @Value("${app.mail.from:}")
     private String fromEmail;
 
     @Value("${app.mail.from-name}")
@@ -47,30 +41,29 @@ public class EmailService {
     @Value("${app.otp.expiry-minutes:10}")
     private int otpExpiryMinutes;
 
+    public EmailService() {
+        this.brevoClient = RestClient.builder()
+                .baseUrl("https://api.brevo.com/v3")
+                .build();
+    }
+
     @PostConstruct
     public void logMailConfiguration() {
-        boolean credentialsConfigured = !mailUsername.isBlank() && !mailPassword.isBlank();
         log.info(
-                "Mail configuration loaded: host={}, port={}, username={}, passwordConfigured={}, from={} <{}>",
-                mailHost,
-                mailPort,
-                mailUsername.isBlank() ? "(not set)" : mailUsername,
-                credentialsConfigured,
+                "Email configuration loaded: provider=Brevo, apiKeyConfigured={}, from={} <{}>",
+                !brevoApiKey.isBlank(),
                 fromName,
-                fromEmail);
+                fromEmail.isBlank() ? "(not set)" : fromEmail);
 
-        if (!credentialsConfigured) {
+        if (brevoApiKey.isBlank()) {
             log.warn(
-                    "SMTP credentials are missing. Set MAIL_USERNAME and MAIL_PASSWORD environment variables "
-                            + "before starting the backend. OTP and notification emails will fail until configured.");
+                    "BREVO_API_KEY is missing. Set BREVO_API_KEY before starting the backend. "
+                            + "OTP and notification emails will fail until configured.");
         }
 
-        if (!mailUsername.isBlank() && !fromEmail.equalsIgnoreCase(mailUsername)) {
+        if (fromEmail.isBlank()) {
             log.warn(
-                    "MAIL_FROM ({}) does not match MAIL_USERNAME ({}). Gmail requires the sender address "
-                            + "to match the authenticated account.",
-                    fromEmail,
-                    mailUsername);
+                    "MAIL_FROM is missing. Set MAIL_FROM to a verified Brevo sender address.");
         }
     }
 
@@ -176,83 +169,72 @@ public class EmailService {
 
     private void sendEmail(String toEmail, String subject, String body, String emailType) {
         log.info(
-                "Sending {} email via SMTP host={} port={} from={} <{}> to={}",
+                "Sending {} email via Brevo from={} <{}> to={}",
                 emailType,
-                mailHost,
-                mailPort,
                 fromName,
                 fromEmail,
                 toEmail);
 
-        if (mailUsername.isBlank() || mailPassword.isBlank()) {
+        if (brevoApiKey.isBlank() || fromEmail.isBlank()) {
             log.error(
-                    "SMTP send aborted for {} email to {}: MAIL_USERNAME or MAIL_PASSWORD is not configured",
+                    "Email send aborted for {} email to {}: BREVO_API_KEY or MAIL_FROM is not configured",
                     emailType,
                     toEmail);
-            throw new MailAuthenticationException(
-                    "SMTP credentials are not configured. Set MAIL_USERNAME and MAIL_PASSWORD environment variables.");
+            throw new EmailDeliveryException(
+                    "Email service is not configured. Set BREVO_API_KEY and MAIL_FROM environment variables.");
         }
+
+        Map<String, Object> payload = buildPayload(toEmail, subject, body);
 
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(toEmail);
-            message.setSubject(subject);
-            message.setText(body);
-
-            mailSender.send(message);
+            brevoClient.post()
+                    .uri(BREVO_SEND_EMAIL_URI)
+                    .header("api-key", brevoApiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .toBodilessEntity();
             log.info("{} email sent successfully to {}", emailType, toEmail);
-        } catch (MailAuthenticationException ex) {
+        } catch (RestClientResponseException ex) {
             logMailFailure(emailType, toEmail, ex);
-            throw new MailAuthenticationException(
-                    resolveMailAuthMessage(ex),
+            throw new EmailDeliveryException(
+                    "Unable to send email at this time. Please try again later.",
                     ex);
-        } catch (MailException ex) {
+        } catch (Exception ex) {
             logMailFailure(emailType, toEmail, ex);
-            throw ex;
+            throw new EmailDeliveryException(
+                    "Unable to send email at this time. Please try again later.",
+                    ex);
         }
     }
 
-    private String resolveMailAuthMessage(MailAuthenticationException ex) {
-        String rootCause = getRootCauseMessage(ex);
-        if (mailUsername.isBlank() || mailPassword.isBlank()) {
-            return "SMTP credentials are not configured. Set MAIL_USERNAME and MAIL_PASSWORD environment variables.";
-        }
-        if (rootCause != null && rootCause.contains("no password specified")) {
-            return "SMTP password is missing. Set the MAIL_PASSWORD environment variable to your Gmail App Password.";
-        }
-        return "SMTP authentication failed. Verify MAIL_USERNAME and MAIL_PASSWORD (use a Gmail App Password, not your regular password). Root cause: "
-                + rootCause;
-    }
-
-    private String getRootCauseMessage(Throwable ex) {
-        Throwable root = ex;
-        while (root.getCause() != null) {
-            root = root.getCause();
-        }
-        return root.getMessage();
+    private Map<String, Object> buildPayload(String toEmail, String subject, String body) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("sender", Map.of("name", fromName, "email", fromEmail));
+        payload.put("to", List.of(Map.of("email", toEmail)));
+        payload.put("subject", subject);
+        payload.put("textContent", body);
+        return payload;
     }
 
     private void logMailFailure(String emailType, String toEmail, Exception ex) {
+        if (ex instanceof RestClientResponseException responseException) {
+            log.error(
+                    "Failed to send {} email to {} via Brevo: HTTP {} {}",
+                    emailType,
+                    toEmail,
+                    responseException.getStatusCode().value(),
+                    responseException.getStatusText());
+            return;
+        }
+
         log.error(
-                "Failed to send {} email to {} via host={} port={} username={}: {} ({})",
+                "Failed to send {} email to {} via Brevo: {} ({})",
                 emailType,
                 toEmail,
-                mailHost,
-                mailPort,
-                mailUsername.isBlank() ? "(not set)" : mailUsername,
                 ex.getMessage(),
                 ex.getClass().getSimpleName(),
                 ex);
-
-        Throwable cause = ex.getCause();
-        while (cause != null) {
-            log.error(
-                    "Caused by: {} - {}",
-                    cause.getClass().getName(),
-                    cause.getMessage());
-            cause = cause.getCause();
-        }
     }
 
     private String formatDate(LocalDate date) {
