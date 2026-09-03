@@ -21,13 +21,26 @@ public class CorsConfig {
     private static final List<String> ALLOWED_HEADERS =
             List.of("Content-Type", "Authorization");
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:5174,https://d-portal-7avl64ub8-saifus-projects-4f77054e.vercel.app}")
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:5174}")
     private String allowedOrigins;
+
+    @Value("${app.cors.allowed-origin-patterns:https://*-saifus-projects-4f77054e.vercel.app,https://d-portal-*.vercel.app}")
+    private String allowedOriginPatterns;
 
     @Bean
     public FilterRegistrationBean<CorsFilter> corsFilterRegistration() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(parseOrigins(allowedOrigins));
+
+        List<String> origins = parseList(allowedOrigins);
+        if (!origins.isEmpty()) {
+            config.setAllowedOrigins(origins);
+        }
+
+        List<String> originPatterns = parseList(allowedOriginPatterns);
+        if (!originPatterns.isEmpty()) {
+            config.setAllowedOriginPatterns(originPatterns);
+        }
+
         config.setAllowedMethods(ALLOWED_METHODS);
         config.setAllowedHeaders(ALLOWED_HEADERS);
         config.setMaxAge(3600L);
@@ -40,10 +53,10 @@ public class CorsConfig {
         return registration;
     }
 
-    private List<String> parseOrigins(String origins) {
-        return Arrays.stream(origins.split(","))
+    private List<String> parseList(String values) {
+        return Arrays.stream(values.split(","))
                 .map(String::trim)
-                .filter(origin -> !origin.isEmpty())
+                .filter(value -> !value.isEmpty())
                 .toList();
     }
 }
