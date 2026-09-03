@@ -1,12 +1,19 @@
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
-import { AnimatedAnchor, AnimatedLink } from '../motion';
+import { AnimatedLink } from '../motion';
 import { CLINIC_NAME } from '../../constants/clinic';
 import ClinicLogo from '../common/ClinicLogo';
+import { PATIENT_LOGIN_URL } from '../../config/portalConfig';
 
-const portalUrl = import.meta.env.VITE_PORTAL_URL?.replace(/\/$/, '') || '';
-const patientLoginUrl = portalUrl ? `${portalUrl}/login/patient` : '/book-appointment';
+const handlePatientPortalClick = (event) => {
+  if (!PATIENT_LOGIN_URL) {
+    event.preventDefault();
+    return;
+  }
+  event.preventDefault();
+  window.location.assign(PATIENT_LOGIN_URL);
+};
 
 const navLinks = [
   { label: 'Home', path: '/' },
@@ -86,9 +93,13 @@ export default function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <AnimatedAnchor href={patientLoginUrl} className="btn-outline text-sm">
+          <a
+            href={PATIENT_LOGIN_URL || '#'}
+            onClick={handlePatientPortalClick}
+            className="btn-outline text-sm"
+          >
             Patient Portal
-          </AnimatedAnchor>
+          </a>
           <AnimatedLink to="/book-appointment" className="btn-primary text-sm">
             Book Now
           </AnimatedLink>
@@ -134,8 +145,11 @@ export default function Header() {
               </NavLink>
             ))}
             <a
-              href={patientLoginUrl}
-              onClick={() => setMenuOpen(false)}
+              href={PATIENT_LOGIN_URL || '#'}
+              onClick={(event) => {
+                handlePatientPortalClick(event);
+                setMenuOpen(false);
+              }}
               className="rounded-lg px-4 py-3 text-sm font-medium text-medical-700"
             >
               Patient Portal
