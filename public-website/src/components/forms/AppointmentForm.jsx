@@ -63,6 +63,7 @@ export default function AppointmentForm({ onSuccess }) {
       .catch(() => {
         if (!cancelled) {
           setBookedSlots([]);
+          setError('Unable to load time slot availability. You can still submit your request.');
         }
       })
       .finally(() => {
@@ -150,7 +151,6 @@ export default function AppointmentForm({ onSuccess }) {
       } else {
         setError('Unable to submit your request. Please try again or call us directly.');
       }
-      console.error(err);
     } finally {
       setLoading(false);
     }

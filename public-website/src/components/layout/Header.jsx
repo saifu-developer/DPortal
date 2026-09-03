@@ -5,8 +5,8 @@ import { AnimatedAnchor, AnimatedLink } from '../motion';
 import { CLINIC_NAME } from '../../constants/clinic';
 import ClinicLogo from '../common/ClinicLogo';
 
-const portalUrl = import.meta.env.VITE_PORTAL_URL || 'http://localhost:5173';
-const patientLoginUrl = `${portalUrl}/login/patient`;
+const portalUrl = import.meta.env.VITE_PORTAL_URL?.replace(/\/$/, '') || '';
+const patientLoginUrl = portalUrl ? `${portalUrl}/login/patient` : '/book-appointment';
 
 const navLinks = [
   { label: 'Home', path: '/' },
